@@ -1,0 +1,49 @@
+name: Node.js CI
+
+env:
+  DOCKER_REPO: ${{ secrets.DOCKER_USERNAME }}/${{ vars.IMAGE_NAME }}
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: '**/package-lock.json'
+
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+
+    - name: Set version
+      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+    - name: Docker Login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ env.DOCKER_REPO }}:latest
+          ${{ env.DOCKER_REPO }}:${{ github.run_number }}
