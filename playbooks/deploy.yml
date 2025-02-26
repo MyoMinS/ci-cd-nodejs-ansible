@@ -1,0 +1,59 @@
+---
+- name: Deploy Next.js Docker container
+  hosts: all
+  become: true
+  vars:
+    image_name: "{{ image_name }}"
+    domain_name: "{{ domain_name }}"
+
+  tasks:
+    - name: Install Docker and nginx
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      with_items:
+        - docker.io
+        - nginx
+
+    - name: Start Docker and nginx service
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+      with_items:
+        - docker
+        - nginx
+
+    - name: Pull Docker image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        source: pull
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: nextjs_container
+        image: "{{ image_name }}"
+        state: started
+        restart_policy: always
+        published_ports:
+          - "3000:3000"
+
+    - name: Wait for container to start
+      ansible.builtin.wait_for:
+        host: localhost
+        port: 3000
+        delay: 5
+        timeout: 60
+
+    - name: Set Nginx conf file
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: "/etc/nginx/sites-available/default"
+        mode: "0755"
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
