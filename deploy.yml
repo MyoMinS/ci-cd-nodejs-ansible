@@ -1,0 +1,37 @@
+---
+- name: Deploy Next.js Docker container
+  hosts: all
+  become: true
+  vars:
+    IMAGE_NAME: "{{ image_name }}"
+    DOMAIN_NAME: "{{ domain_name }}"
+
+  tasks:
+    - name: update
+      apt:
+        update_cache = true
+
+    - name: Install Docker & nginx
+      apt:
+       name: "{{ item }}"
+       state: present
+       with_items:
+        - docker.io
+        - nginx
+
+    - name: Start  Docker & nginx service
+      apt:
+       name: "{{ item }}"
+       state: Started
+       with_items:
+        - docker.io
+        - nginx
+
+    - name: Pull Docker image
+      docker_image:
+        name: "{{ IMAGE_NAME  }} "
+        source: pull
+
+    - name: Run Docker container
+      docker_container:
+        name: 

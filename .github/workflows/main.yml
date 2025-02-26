@@ -2,7 +2,7 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -14,7 +14,8 @@ jobs:
         node-version: [18.x, 20.x, 22.x]
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -41,3 +42,33 @@ jobs:
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
           ${{ secrets.DOCKER_USERNAME }}/${{ vars.IMAGE_NAME }}:${{ github.run_number }}
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v3
+        with:
+          # Required, playbook filepath
+          playbook: deploy.yml
+          # Optional, directory where playbooks live
+          directory: ./
+          # Optional, SSH private key
+          key: ${{secrets.SSH_PRIVATE_KEY}}
+          # Optional, literal inventory file contents
+          inventory: |
+            [all]
+            server ansible_host=${{ vars.SSH_HOST }} ansible_user=${{ vars.SSH_USER }}
+        
+          # Optional, additional flags to pass to ansible-playbook
+          options: |
+            --inventory .hosts
+            --extra-vars "image_name=$IMAGE_NAME"
+            --extra-vars "domain_name=$DOMAIN_NAME"
+            --extra-vars "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
+            --verbose
+
+
