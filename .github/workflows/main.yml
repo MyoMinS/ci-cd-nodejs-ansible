@@ -1,7 +1,6 @@
 name: Node.js CI
 
 env:
-  DOCKER_REPO: ${{ secrets.DOCKER_USERNAME }}/${{ vars.IMAGE_NAME }}
 
 on:
   push:
@@ -42,5 +41,5 @@ jobs:
         context: .
         push: true
         tags: |
-          ${{ env.DOCKER_REPO }}:latest
-          ${{ env.DOCKER_REPO }}:${{ github.run_number }}
+          ${{ secrets.DOCKER_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
+          ${{ secrets.DOCKER_USERNAME }}/${{ vars.IMAGE_NAME }}:${{ github.run_number }}
