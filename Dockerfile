@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-LABEL maintainer="Myo Min Soe<thixpin@gmail.com>"
+LABEL maintainer="Myo Min Soe<myominsoe432@gmail.com>"
 LABEL description="This is a Dockerfile for Node.js application"
 
 WORKDIR /app
